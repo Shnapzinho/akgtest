@@ -27,19 +27,19 @@ namespace akg1
 			this.KeyPreview = true;
 			this.WindowState = FormWindowState.Maximized;
 
-			if (File.Exists("GasTank.obj"))
-				model.Load("GasTank.obj");
+			if (File.Exists("2.obj"))
+				model.Load("2.obj");
 
 			// 2. Загружаем текстуры (убедитесь, что файлы лежат в папке с .exe или укажите полный путь)
 			// Внутри Form1.cs, где ты загружаешь текстуры:
 			try
 			{
-				if (File.Exists("diffuse.png"))
-					renderer.DiffuseMap = new FastTexture(new Bitmap("diffuse.png"));
-				if (File.Exists("normal.png"))
-					renderer.NormalMap = new FastTexture(new Bitmap("normal.png"));
-				if (File.Exists("specular.png"))
-					renderer.SpecularMap = new FastTexture(new Bitmap("specular.png"));
+				if (File.Exists("D.jpg"))
+					renderer.DiffuseMap = new FastTexture(new Bitmap("D.jpg"));
+				if (File.Exists("N.jpg"))
+					renderer.NormalMap = new FastTexture(new Bitmap("N.jpg"));
+				if (File.Exists("S.jpg"))
+					renderer.SpecularMap = new FastTexture(new Bitmap("S.jpg"));
 			}
 			catch (Exception ex)
 			{

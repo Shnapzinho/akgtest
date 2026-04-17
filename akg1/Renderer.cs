@@ -44,7 +44,7 @@ namespace akg1
 		public FastTexture? DiffuseMap, NormalMap, SpecularMap;
 
 		public Vector3 lightDir = new Vector3(0.5f, 0.5f, 1.0f).Normalize();
-		private float ka = 0.2f, kd = 0.8f, ks = 1.0f, shininess = 40.0f;
+		private float ka = 0.2f, kd = 0.8f, ks = 1.0f, shininess = 60.0f;
 
 		public unsafe void Render(Bitmap bmp, ObjParser model, float angX, float angY, float angZ,
 								   float posX, float posY, float posZ, float scale, float cameraDist)
@@ -63,8 +63,8 @@ namespace akg1
 
 			Matrix4x4 modelM = Matrix4x4.CreateTranslation(posX, posY, posZ) *
 							   Matrix4x4.CreateRotationY(angY) *
-							   Matrix4x4.CreateRotationX(angZ) *
-							   Matrix4x4.CreateRotationZ(angX) *
+							   Matrix4x4.CreateRotationX(angX) *
+							   Matrix4x4.CreateRotationZ(angZ) *
 							   Matrix4x4.CreateScale(scale, scale, scale);
 
 			Matrix4x4 viewM = Matrix4x4.CreateLookAt(new Vector3(0, 0, cameraDist), new Vector3(0, 0, 0), new Vector3(0, 1, 0));

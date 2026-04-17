@@ -36,11 +36,9 @@ namespace akg1
 			Array.Fill(zBuffer, float.MaxValue);
 
 			// Матрицы (используем ваш порядок)
-			Matrix4x4 modelM = Matrix4x4.CreateScale(scale, scale, scale) *
-				   Matrix4x4.CreateRotationX(angX) *
-				   Matrix4x4.CreateRotationY(angY) *
-				   Matrix4x4.CreateRotationZ(angZ) *
-				   Matrix4x4.CreateTranslation(posX, posY, posZ);
+			Matrix4x4 modelM = Matrix4x4.CreateTranslation(posX, posY, posZ) *
+							   Matrix4x4.CreateRotationY(angY) * Matrix4x4.CreateRotationX(angZ) *
+							   Matrix4x4.CreateRotationZ(angX) * Matrix4x4.CreateScale(scale, scale, scale);
 
 			Matrix4x4 viewM = Matrix4x4.CreateLookAt(new Vector3(0, 0, cameraDist), new Vector3(0, 0, 0), new Vector3(0, 1, 0));
 			Matrix4x4 projM = Matrix4x4.CreatePerspective((float)Math.PI / 4, (float)w / h, 0.1f, 1000f);
@@ -131,44 +129,50 @@ namespace akg1
 					{
 						zBuffer[y * w + x] = zS;
 
+						// Перспективно-корректный UV (формула 4.3)
 						float currentInvZ = invZA + (invZB - invZA) * phi;
 						Vector2 currentUVZ = uvZA + (uvZB - uvZA) * phi;
 						Vector2 uv = currentUVZ * (1f / currentInvZ);
 
-						// ИСПРАВЛЕНИЕ 1: Интерполируем позицию пикселя в пространстве вида
-						Vector3 currentPos = vA + (vB - vA) * phi;
-						// ИСПРАВЛЕНИЕ 2: Интерполируем нормаль из вершин (для правильного объема)
-						Vector3 currentNorm = nA + (nB - nA) * phi;
-
-						ptr[y * stride + x] = CalculatePhongWithTextures(uv, currentPos, currentNorm.Normalize());
+						ptr[y * stride + x] = CalculatePhongWithTextures(uv, v0); // ОШИБКА: v0 — это всегда одна точка // v0 здесь как заглушка позиции
 					}
 				}
 			}
 		}
 
-		private int CalculatePhongWithTextures(Vector2 uv, Vector3 pos, Vector3 vertexNormal)
+		private int CalculatePhongWithTextures(Vector2 uv, Vector3 pos)
 		{
+			// 1. Координаты (инвертируем V, если текстура "вверх ногами")
 			float u = Math.Clamp(uv.X, 0, 0.999f);
 			float v = Math.Clamp(1f - uv.Y, 0, 0.999f);
 
-			Vector3 texColor = SampleTexture(DiffuseMap, u, v, new Vector3(0.5f, 0.5f, 0.5f));
-			float texSpec = SampleTexture(SpecularMap, u, v, new Vector3(0.5f, 0.5f, 0.5f)).X;
+			// 2. Берем данные из ваших трех JPG
+			Vector3 texColor = SampleTexture(DiffuseMap, u, v, new Vector3(0.5f, 0.5f, 0.5f)); // Цвет баллона
+			Vector3 texNormal = SampleTexture(NormalMap, u, v, new Vector3(0.5f, 0.5f, 1.0f)); // Рельеф
+																							   // Для Specular берем только яркость (канал R)
+			float texSpec = SampleTexture(SpecularMap, u, v, new Vector3(0, 0, 0)).X;
 
-			// ИСПРАВЛЕНИЕ 3: Используем интерполированную нормаль вершин для объема
-			// (Карту нормалей пока проигнорируем, так как она другого формата)
-			Vector3 n = vertexNormal;
+			// 3. Декодируем нормаль из картинки (формула 4.1 из ПДФ)
+			// N = Color * 2 - 1
+			Vector3 n = (texNormal * 2.0f - new Vector3(1, 1, 1)).Normalize();
 
+			// 4. Считаем освещение по Фонгу (Лаба №3 + №4)
 			Vector3 viewDir = (new Vector3(0, 0, 0) - pos).Normalize();
-			float dotDN = Math.Max(Vector3.Dot(n, lightDir), 0);
 
+			// Ambient (Фоновое)
 			float ambient = ka;
+
+			// Diffuse (Рассеянное)
+			float dotDN = Math.Max(Vector3.Dot(n, lightDir), 0);
 			float diffuse = kd * dotDN;
 
+			// Specular (Зеркальное) - используем вашу ч/б карту
 			Vector3 reflectDir = (n * (2.0f * dotDN) - lightDir).Normalize();
 			float specFactor = (float)Math.Pow(Math.Max(Vector3.Dot(reflectDir, viewDir), 0), shininess);
+			// Чем белее пиксель на specular.jpg, тем сильнее блик
 			float specular = (ks * texSpec) * specFactor;
 
-			// ИСПРАВЛЕНИЕ 4: Чуть больше яркости для диффузки, чтобы логотип горел
+			// 5. Итоговый цвет пикселя
 			float r = Math.Clamp((ambient + diffuse) * texColor.X + specular, 0, 1);
 			float g = Math.Clamp((ambient + diffuse) * texColor.Y + specular, 0, 1);
 			float b = Math.Clamp((ambient + diffuse) * texColor.Z + specular, 0, 1);

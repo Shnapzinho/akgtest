@@ -44,7 +44,7 @@ namespace akg1
 		public FastTexture? DiffuseMap, NormalMap, SpecularMap;
 
 		public Vector3 lightDir = new Vector3(0.5f, 0.5f, 1.0f).Normalize();
-		private float ka = 0.1f, kd = 0.6f, ks = 0.4f, shininess = 60.0f;
+		private float ka = 0.2f, kd = 0.8f, ks = 1.0f, shininess = 40.0f;
 
 		public unsafe void Render(Bitmap bmp, ObjParser model, float angX, float angY, float angZ,
 								   float posX, float posY, float posZ, float scale, float cameraDist)

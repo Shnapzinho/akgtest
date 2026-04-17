@@ -31,20 +31,19 @@ namespace akg1
 				model.Load("GasTank.obj");
 
 			// 2. Загружаем текстуры (убедитесь, что файлы лежат в папке с .exe или укажите полный путь)
+			// Внутри Form1.cs, где ты загружаешь текстуры:
 			try
 			{
-				if (File.Exists("diffuse.jpg"))
-					renderer.DiffuseMap = new Bitmap("diffuse.jpg");
-
-				if (File.Exists("normal.jpg"))
-					renderer.NormalMap = new Bitmap("normal.jpg");
-
-				if (File.Exists("specular.jpg"))
-					renderer.SpecularMap = new Bitmap("specular.jpg");
+				if (File.Exists("diffuse.png"))
+					renderer.DiffuseMap = new FastTexture(new Bitmap("diffuse.png"));
+				if (File.Exists("normal.png"))
+					renderer.NormalMap = new FastTexture(new Bitmap("normal.png"));
+				if (File.Exists("specular.png"))
+					renderer.SpecularMap = new FastTexture(new Bitmap("specular.png"));
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show("Ошибка при загрузке текстур: " + ex.Message);
+				MessageBox.Show("Ошибка загрузки текстур: " + ex.Message);
 			}
 
 			backBuffer = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);

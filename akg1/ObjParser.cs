@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+// УДАЛЕНО using System.Numerics;
 
 namespace akg1
 {
@@ -9,84 +10,51 @@ namespace akg1
 	{
 		public List<Vector3> Vertices = new List<Vector3>();
 		public List<Vector3> Normals = new List<Vector3>();
-		public List<Vector2> TextureCoords = new List<Vector2>();
-
+		public List<Vector2> TexCoords = new List<Vector2>();
 		public List<int[]> Faces = new List<int[]>();
 		public List<int[]> UVFaces = new List<int[]>();
 
 		public void Load(string path)
 		{
-			// 1. Проверяем, существует ли файл
-			if (!File.Exists(path))
-			{
-				System.Windows.Forms.MessageBox.Show("Файл не найден по пути: " + Path.GetFullPath(path));
-				return;
-			}
+			if (!File.Exists(path)) return;
+			Vertices.Clear(); Faces.Clear(); Normals.Clear(); TexCoords.Clear(); UVFaces.Clear();
 
-			Vertices.Clear(); Faces.Clear(); Normals.Clear();
-			TextureCoords.Clear(); UVFaces.Clear();
-
-			// 2. Читаем файл построчно
 			foreach (var line in File.ReadLines(path))
 			{
-				string trimmed = line.Trim();
-				if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#")) continue;
-
-				// Разделяем по пробелам или табуляциям
-				var parts = trimmed.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+				var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 				if (parts.Length < 2) continue;
 
-				if (parts[0] == "v") // Вершина
-				{
-					Vertices.Add(new Vector3(
-						float.Parse(parts[1], CultureInfo.InvariantCulture),
-						float.Parse(parts[2], CultureInfo.InvariantCulture),
-						float.Parse(parts[3], CultureInfo.InvariantCulture)));
-				}
-				else if (parts[0] == "vt") // Текстурная координата
-				{
-					TextureCoords.Add(new Vector2(
-						float.Parse(parts[1], CultureInfo.InvariantCulture),
-						float.Parse(parts[2], CultureInfo.InvariantCulture)));
-				}
-				else if (parts[0] == "f") // Грань
+				if (parts[0] == "v")
+					Vertices.Add(new Vector3(float.Parse(parts[1], CultureInfo.InvariantCulture), float.Parse(parts[2], CultureInfo.InvariantCulture), float.Parse(parts[3], CultureInfo.InvariantCulture)));
+				else if (parts[0] == "vt")
+					TexCoords.Add(new Vector2(float.Parse(parts[1], CultureInfo.InvariantCulture), float.Parse(parts[2], CultureInfo.InvariantCulture)));
+				else if (parts[0] == "f")
 				{
 					int[] face = new int[parts.Length - 1];
 					int[] uvFace = new int[parts.Length - 1];
-
 					for (int i = 1; i < parts.Length; i++)
 					{
 						var subParts = parts[i].Split('/');
+						face[i - 1] = int.Parse(subParts[0]) - 1;
 
-						// Индекс вершины
-						int vIdx = int.Parse(subParts[0]);
-						face[i - 1] = vIdx > 0 ? vIdx - 1 : Vertices.Count + vIdx;
-
-						// Индекс текстуры (если есть)
 						if (subParts.Length > 1 && !string.IsNullOrEmpty(subParts[1]))
-						{
-							int vtIdx = int.Parse(subParts[1]);
-							uvFace[i - 1] = vtIdx > 0 ? vtIdx - 1 : TextureCoords.Count + vtIdx;
-						}
+							uvFace[i - 1] = int.Parse(subParts[1]) - 1;
 					}
 					Faces.Add(face);
 					UVFaces.Add(uvFace);
 				}
 			}
-
 			ComputeNormals();
 		}
 
 		private void ComputeNormals()
 		{
-			if (Vertices.Count == 0) return;
+			if (Normals.Count > 0) return; // Если в файле уже были нормали vn
 			Vector3[] vn = new Vector3[Vertices.Count];
 			foreach (var f in Faces)
 			{
-				if (f.Length < 3) continue;
-				Vector3 v0 = Vertices[f[0]], v1 = Vertices[f[1]], v2 = Vertices[f[2]];
-				Vector3 normal = Vector3.Cross(v1 - v0, v2 - v0).Normalize();
-				foreach (var idx in f) if (idx >= 0 && idx < vn.Length) vn[idx] = vn[idx] + normal;
+				Vector3 normal = Vector3.Cross(Vertices[f[1]] - Vertices[f[0]], Vertices[f[2]] - Vertices[f[0]]).Normalize();
+				foreach (var idx in f) vn[idx] = vn[idx] + normal;
 			}
 			foreach (var v in vn) Normals.Add(v.Normalize());
 		}
